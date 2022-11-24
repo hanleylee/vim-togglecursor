@@ -19,6 +19,10 @@ if !exists("g:togglecursor_disable_default_init")
     let g:togglecursor_disable_default_init = 0
 endif
 
+if !exists("g:use_togglecursor_instead_of_native_in_cli")
+    let g:use_togglecursor_instead_of_native_in_cli = 0
+endif
+
 let g:loaded_togglecursor = 1
 
 let s:cursorshape_underline = "\<Esc>]50;CursorShape=2;BlinkingCursorEnabled=0\x7"
@@ -40,8 +44,7 @@ let s:xterm_blinking_block = "\<Esc>[0 q"
 let s:xterm_blinking_line = "\<Esc>[5 q"
 let s:xterm_blinking_underline = "\<Esc>[3 q"
 
-" Detect whether this version of vim supports changing the replace cursor
-" natively.
+" Detect whether this version of vim supports changing the replace cursor natively.
 let s:sr_supported = exists("+t_SR")
 
 let s:supported_terminal = ''
@@ -49,8 +52,7 @@ let s:supported_terminal = ''
 " Check for supported terminals.
 if exists("g:togglecursor_force") && g:togglecursor_force != ""
     if count(["xterm", "cursorshape"], g:togglecursor_force) == 0
-        echoerr "Invalid value for g:togglecursor_force: " .
-                \ g:togglecursor_force
+        echoerr "Invalid value for g:togglecursor_force: " .  g:togglecursor_force
     else
         let s:supported_terminal = g:togglecursor_force
     endif
@@ -138,18 +140,7 @@ function! s:TmuxEscape(line)
     return "\<Esc>Ptmux;" . escaped_line . "\<Esc>\\"
 endfunction
 
-function! s:SupportedTerminal()
-    if s:supported_terminal == ''
-        return 0
-    endif
-
-    return 1
-endfunction
-
 function! s:GetEscapeCode(shape)
-    if !s:SupportedTerminal()
-        return ''
-    endif
 
     let l:escape_code = s:{s:supported_terminal}_{a:shape}
 
@@ -161,9 +152,6 @@ function! s:GetEscapeCode(shape)
 endfunction
 
 function! s:ToggleCursorInit()
-    if !s:SupportedTerminal()
-        return
-    endif
 
     let &t_EI = s:GetEscapeCode(g:togglecursor_default)
     let &t_SI = s:GetEscapeCode(g:togglecursor_insert)
@@ -180,6 +168,7 @@ function! s:ToggleCursorLeave()
 endfunction
 
 function! s:ToggleCursorByMode()
+    echom 111
     if v:insertmode == 'r' || v:insertmode == 'v'
         let &t_SI = s:GetEscapeCode(g:togglecursor_replace)
     else
@@ -201,7 +190,9 @@ augroup ToggleCursorStartup
     autocmd!
     autocmd VimEnter * call <SID>ToggleCursorInit()
     autocmd VimLeave * call <SID>ToggleCursorLeave()
-    if !s:sr_supported
+    if g:use_togglecursor_instead_of_native_in_cli
+        autocmd InsertEnter * call <SID>ToggleCursorByMode()
+    elseif !s:sr_supported
         autocmd InsertEnter * call <SID>ToggleCursorByMode()
     endif
 augroup END
