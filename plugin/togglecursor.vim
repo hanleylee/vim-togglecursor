@@ -168,7 +168,6 @@ function! s:ToggleCursorLeave()
 endfunction
 
 function! s:ToggleCursorByMode()
-    echom 111
     if v:insertmode == 'r' || v:insertmode == 'v'
         let &t_SI = s:GetEscapeCode(g:togglecursor_replace)
     else
